@@ -249,10 +249,10 @@ function Save_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % First, chect the parameters
-Touch = handles.SPM.TEDM.Touch;
+Touch = prod(handles.SPM.TEDM.Touch);
 
 if(~Touch)
-	warndlg('Please, check the settings to continue.   ','Check Settings');
+	warndlg('Please, check the all settings to continue.   ','Check Settings');
 
 else
 
@@ -408,9 +408,6 @@ function ButConfirm_Callback(hObject, eventdata, handles)
 
 % Parameters
 ss     = handles.SS;
-Dat    = get(handles.SsTable, 'Data');
-Tcheck = Dat(:,3); 
-
 % Determine if it was touched
 Check = handles.SPM.TEDM.Touch(ss);
 Procs = true;
@@ -436,11 +433,13 @@ if(Procs)
 
 	% Confirm checking
 	if(pass)
-		set(handles.ButConfirm,'BackgroundColor',[0.349, 0.631, 0.655]);
+
+		Dat    = get(handles.SsTable, 'Data');
+		Tcheck = Dat(:,4); 
 
 		% Update table ssesion
 		Tcheck{ss}=true;
-		Dat(:,3) = Tcheck';
+		Dat(:,4) = Tcheck';
 
 		set(handles.SsTable,'Data',Dat);
 	end
@@ -459,7 +458,7 @@ SS    = handles.SS;
 
 % Increase session
 if(SS>=Sess)
-	SS = Sess;
+	SS = 1;
 else
 	SS = SS + 1;
 end
@@ -486,7 +485,7 @@ SS    = handles.SS;
 
 % Increase session
 if(SS<=1)
-	SS = 1;
+	SS = Sess;
 else
 	SS = SS - 1;
 end
@@ -533,31 +532,32 @@ function [pass] = CheckParameters(hObject, eventdata, handles)
 % and fullfill the default parameters.
 
 pass = false;
+ss = handles.SS;  % Set particular studied session
 
-if(handles.SPM.TEDM.Touch)
+if(handles.SPM.TEDM.Touch(ss))
 
 	Line = 'Do you want to rewrite the current parameters?';
 	answer = questdlg(Line,'Warning!','Yes','No','Yes');
 
 	switch answer
 		case 'Yes'
-			handles.SPM.TEDM.Touch = false;
+			handles.SPM.TEDM.Touch(ss) = false;
 
 		otherwise
-			handles.SPM.TEDM.Touch = true;
+			handles.SPM.TEDM.Touch(ss) = true;
 	end
 end
 
-if(~handles.SPM.TEDM.Touch)
+if(~handles.SPM.TEDM.Touch(ss))
 	%--- Number of components ---
-	NSrc_A = handles.SPM.TEDM.Param.NSrc_A;
-	K      = handles.SPM.TEDM.Param.K;
+	NSrc_A = handles.SPM.TEDM.Param(ss).NSrc_A;
+	K      = handles.SPM.TEDM.Param(ss).K;
 
 	% Free components
 	if(K==NSrc_A)
-		handles.SPM.TEDM.hist.FreeCmp = false;
+		handles.SPM.TEDM.Param(ss).FreeCmp = false;
 	else
-		handles.SPM.TEDM.hist.FreeCmp = true;
+		handles.SPM.TEDM.Param(ss).FreeCmp = true;
 	end
 
 	%--- Sparsity Percentage ---
@@ -585,7 +585,7 @@ if(~handles.SPM.TEDM.Touch)
 	if(Select{NSrc_A})
 		cnt = cnt + 1;
 
-		handles.SPM.TEDM.Param.iB = cnt;
+		handles.SPM.TEDM.Param(ss).iB = cnt;
 
 		up_name{cnt} = name{NSrc_A};
 		up_Sp_A(cnt) = Sp_A(NSrc_A);
@@ -596,19 +596,19 @@ if(~handles.SPM.TEDM.Touch)
 		Line3 = 'User discretion is advised \(o-o ) ';
 		warndlg({Line1,' ', Line2 , ' ',Line3}, 'No Constant Regressor');
 
-		handles.SPM.TEDM.Param.iB = [];
+		handles.SPM.TEDM.Param(ss).iB = [];
 	end
 
 	% Update  components
-	handles.SPM.TEDM.Param.Aname = up_name';
-	handles.SPM.TEDM.Param.Sp_A = up_Sp_A;
+	handles.SPM.TEDM.Param(ss).Aname = up_name';
+	handles.SPM.TEDM.Param(ss).Sp_A = up_Sp_A;
 
-	handles.SPM.TEDM.Param.NSrc_A = cnt;
-	handles.SPM.TEDM.Param.K      = K-NSrc_A+cnt;
+	handles.SPM.TEDM.Param(ss).NSrc_A = cnt;
+	handles.SPM.TEDM.Param(ss).K      = K-NSrc_A+cnt;
 
 	% Update names
 	cfree = 1;
-	for i = 1:handles.SPM.TEDM.Param.K;
+	for i = 1:handles.SPM.TEDM.Param(ss).K;
 		
 		Cname = sprintf('Cmp%02i-',i);
 
@@ -619,26 +619,26 @@ if(~handles.SPM.TEDM.Touch)
 			cfree = cfree+1;
 		end
 
-		handles.SPM.TEDM.Param.names{i} = Cname;
+		handles.SPM.TEDM.Param(ss).names{i} = Cname;
 
 	end
 
 
 	% Update Canonincal Dictionary
 	Sl = cell2mat(Select)';
-	Del = handles.SPM.TEDM.Param.Del;
+	Del = handles.SPM.TEDM.Param(ss).Del;
 
-	handles.SPM.TEDM.Param.Del = Del(:,Sl);
+	handles.SPM.TEDM.Param(ss).Del = Del(:,Sl);
 
 
 	% Free components
-	if(handles.SPM.TEDM.hist.FreeCmp)
+	if(handles.SPM.TEDM.Param(ss).FreeCmp)
 
 		%Check sparsity mode
-		switch handles.SPM.TEDM.Param.SpMode
+		switch handles.SPM.TEDM.Param(ss).SpMode
 			case 'Auto'
 				% Number of free components
-				NSrc_F = handles.SPM.TEDM.Param.NSrc_F;
+				NSrc_F = handles.SPM.TEDM.Param(ss).NSrc_F;
 
 				SpF = tedm_AutoSparsity(NSrc_F);
 
@@ -651,26 +651,26 @@ if(~handles.SPM.TEDM.Touch)
 		SpF = [];
 	end
 
-	handles.SPM.TEDM.Param.Sp_F = SpF;
+	handles.SPM.TEDM.Param(ss).Sp_F = SpF;
 
 	% Set sparsity of the free components
 
 	%--- Similarity Constraint ---
-	Mode = handles.SPM.TEDM.Param.SimMode;
+	Mode = handles.SPM.TEDM.Param(ss).SimMode;
 
 	switch Mode
 		case 'Manual'
 			cdl = str2num(get(handles.SimVal,'String'));
 
 		otherwise
-			cdl = tedm_AutoSimilarity(handles.SPM);
+			cdl = tedm_AutoSimilarity(handles.SPM,ss);
 	end
 
 	% Set parameter
-	handles.SPM.TEDM.Param.cdl = cdl;
+	handles.SPM.TEDM.Param(ss).cdl = cdl;
 
 	% Initialization completed
-	handles.SPM.TEDM.Touch = true;
+	handles.SPM.TEDM.Touch(ss) = true;
 
 
 	% Update handles structure

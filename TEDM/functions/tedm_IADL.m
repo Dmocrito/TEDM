@@ -76,6 +76,7 @@ function [D,S,E] = tedm_IADL(param) % Main Function
 	end
 
 	if(Verb) 
+		fprintf('_____________________________________\n');
 		fprintf('      __   __   ____  __\n     (  ) / _\\ (    \\(  )\n');
  		fprintf('      )( /    \\ ) D (/ (_/\\\n     (__)\\_/\\_/(____/\\____/\n');
 		fprintf('_____________________________________\n\n');

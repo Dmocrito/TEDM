@@ -71,7 +71,7 @@ switch handles.Case
 
 case 'SelectRegressor'
 	% Menu parameters
-    set(handles.MainPanel,'Title','Select file with the Enhanced Design matrix');
+    set(handles.MainPanel,'Title','Select SPM file with the Enhanced design matrix');
 
   otherwise
     error('Ups... It seems that something went wrong \(u u)');
@@ -147,7 +147,7 @@ if(handles.Init.SPMfile)
         touch = false;
         if(isfield(SPM,'TEDM'));
           if(isfield(SPM.TEDM,'Touch'));
-            if(SPM.TEDM.Touch == 1);
+            if(prod(SPM.TEDM.Touch)==1);
               touch = true;
             end
           end
@@ -156,6 +156,9 @@ if(handles.Init.SPMfile)
         if(touch)
           % Close window
           close;
+
+          % Updaet history
+          SPM.TEDM.hist.file = file;
 
           % Call Visual Interface
     		  tedm_RunIADL(SPM);
@@ -169,7 +172,7 @@ if(handles.Init.SPMfile)
 
     	case 'SelectRegressor'
     		% Call guy for Select Regressors
-    		tedm_SelectRegressor(SPM);
+    		tedm_SetReg(SPM);
 
   		otherwise
     		error('Ups... It seems that something went wrong. \(u u)');
@@ -231,6 +234,10 @@ function SPM = DefaultTEDM(SPM)
 % Check the number of sessions
 Sess = length(SPM.nscan);
 
+% --- General Info ---
+SPM.TEDM.hist.prefix  = 'Setup_';
+SPM.TEDM.hist.outfile = 'Enh_SPM';
+
 if(Sess==1) %======== Single-Session Experiment ========
 
   K_A = length(SPM.xX.iC); 
@@ -251,9 +258,6 @@ if(Sess==1) %======== Single-Session Experiment ========
 
   % Update parameters
   SPM.TEDM.Touch = false;
-
-  SPM.TEDM.hist.prefix  = 'Setup_';
-  SPM.TEDM.hist.outfile = 'Enh_SPM';
 
   SPM.TEDM.Param.K      = K_A;
   SPM.TEDM.Param.NSrc_A = K_A;
@@ -280,12 +284,6 @@ if(Sess==1) %======== Single-Session Experiment ========
   SPM.TEDM.Param.name = name;
 
 else %======== Multi-session experiment =========
-
-  % Set Sessions
-  SPM.TEDM.Sess = Sess;
-
-  % Prefix
-  SPM.TEDM.hist.prefix  = 'Setup_';
 
   % Parameters
   Dur = cumsum([0 SPM.nscan]);
@@ -318,7 +316,7 @@ else %======== Multi-session experiment =========
     SPM.TEDM.Param(ss).SpMode = 'Auto';
 
     SPM.TEDM.Param(ss).SimMode = 'Conservative';
-    SPM.TEDM.Param(ss).cld     = [];
+    SPM.TEDM.Param(ss).cdl     = [];
 
     % Select task-related time courses
     Cols = [SPM.Sess(ss).col, SPM.xX.iB(ss)];

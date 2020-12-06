@@ -78,6 +78,14 @@ function Info_Callback(hObject, eventdata, handles)
 % hObject    handle to Info (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+tt = '--- Information ---';
+msg = {'‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾';...
+       '   TEDM - Toolbox for Enhanced Design Matrix';...
+       '___________________________________________________';...
+       '  vs.2.0 - 2020  -  M. Morante   ';
+       '‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾'};
+msgbox(msg,tt);
+
 
 
 % --- Executes on button press in quit.

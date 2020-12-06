@@ -7,6 +7,9 @@ if(~isfield(SPM_old.TEDM,'Res'))
 	error('Well, something went wrong: No Enhanced Design Matrix detected');
 end
 
+%--- Number of sessions ---
+nSess = numel(SPM_old.nscan);
+
 %--- Update basic parameter set up ---
 SPM.xY.RT  = SPM_old.xY.RT;
 SPM.xY.P   = SPM_old.xY.P;
@@ -31,12 +34,13 @@ SPM.xVi.form = SPM_old.xVi.form;
 
 % Save TEDM Information
 SPM.TEDM = SPM_old.TEDM;
-SPM.TEDM.hist.Enh = true;
 
 %=== Set Enhanced Design Matrix ===
-SPM.Sess.U = [];
-SPM.Sess.C.C = SPM.TEDM.Res.xD;
-SPM.Sess.C.name = SPM.TEDM.Param.names;
+for ss = 1:nSess
+    SPM.Sess(ss).U = [];
+    SPM.Sess(ss).C.C = SPM.TEDM.Res(ss).xD;
+    SPM.Sess(ss).C.name = SPM.TEDM.Param(ss).names;
+end
 
 %=== Call SPM parametrization ===
 [SPM] = tedm_fMRI_spm_ui(SPM);

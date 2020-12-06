@@ -22,7 +22,7 @@ function varargout = tedm_RunIADL(varargin)
 
 % Edit the above text to modify the response to help tedm_RunIADL
 
-% Last Modified by GUIDE v2.5 23-Aug-2019 19:15:33
+% Last Modified by GUIDE v2.5 04-Aug-2020 14:09:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,60 +57,34 @@ handles.output = hObject;
 
 %=== DEFAULT SETTINGS ==============================================
 
-%--- Set SPM file from the input---
+% Set SPM file from the input---
 handles.SPM = varargin{1};
 
-%--- Information ---
-set(handles.InfoPrefix,'String',handles.SPM.TEDM.hist.file{1});
-set(handles.InfoAssisted,'String',num2str(handles.SPM.TEDM.Param.NSrc_A));
-set(handles.InfoComponent,'String',num2str(handles.SPM.TEDM.Param.NSrc_F));
-set(handles.InfoSimilarity,'String',num2str(handles.SPM.TEDM.Param.cdl));
-set(handles.InfoOutput,'String',handles.SPM.TEDM.hist.outfile);
+% Identify number of sessions
+Sess = length(handles.SPM.nscan);
+set(handles.SessionText,'String',num2str(Sess,'%02i'));
 
-%=== Info. Figures ===
-% Parameters
-Sp_A   = handles.SPM.TEDM.Param.Sp_A;
-Sp_F   = handles.SPM.TEDM.Param.Sp_F;
-K      = handles.SPM.TEDM.Param.K;
-NSrc_A = handles.SPM.TEDM.Param.NSrc_A;
+%--- Session Menu Update ---
+handles.SS = 1; % Session 1 as default
 
-%----- Task related time courses -----
-% Reference Dictionary
-Del = handles.SPM.TEDM.Param.Del;
+UpdateSessionMenu(hObject, eventdata, handles);
+ 
 
-% Plot
-axes(handles.axesTask);
-axT = imagesc(Del);
-
-% Features
-axT = colormap(flipud(bone));
-set(handles.axesTask,'XTick',[1:1:NSrc_A]);
-set(handles.axesTask,'YTick',[]);
-set(handles.axesTask,'XAxisLocation','top');
-set(handles.axesTask,'YGrid','off');
-
-
-%----- Sparsity Percentage -----
-
-% Plot
-axes(handles.axesSp);
-
-bar([Sp_A Sp_F],'b');
-hold on
-bar(Sp_A,'r');
-
-% Features
-
-if (K<=30)
-	stp = 1;
-else
-	stp = 2;
+%-- Remove navigation buttons for a single session ---
+if(Sess==1)
+  set(handles.ButSessNext,'Visible','off');
+  set(handles.ButSessPrev,'Visible','off');
 end
 
-set(handles.axesSp,'XLim',[0.5 K+0.5]);
-set(handles.axesSp,'XTick',[1:stp:K]);
-set(handles.axesSp,'YGrid','on');
+% Input file info
+file = handles.SPM.TEDM.hist.file;
+set(handles.InputText,'String',file{1});
 
+%=== Set default prefix ===
+outfile = handles.SPM.TEDM.hist.outfile;
+set(handles.outPrefix,'String',[outfile '.mat']);
+
+%===================================================================
 
 % Update handles structure
 guidata(hObject, handles);
@@ -130,292 +104,349 @@ function varargout = tedm_RunIADL_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-% --- Executes on button press in But_EDM.
-function But_EDM_Callback(hObject, eventdata, handles)
-% hObject    handle to But_EDM (see GCBO)
+% --- Executes on button press in ButEDM.
+function ButEDM_Callback(hObject, eventdata, handles)
+% hObject    handle to ButEDM (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+%=== Sessions ===
+Sess = length(handles.SPM.nscan);
 
-%=== Prepare Parameter ====
-% Defien progress var
-Pbar = waitbar(0.0,'Setting Parameters','Name','Initialization');
-fprintf('Setting parameters\n');
-for i=1:50; fprintf('_'); end
+for ss = 1:Sess
 
-Param.data = 1;
+  %=== Prepare Parameter ====
+  c = fix(clock);
+  fprintf('------------------------------------------------------------------------\n');
+  fprintf('   Session %02i                                                  %2i:%2i\n',ss,c(4),c(5));
+  fprintf('========================================================================\n');
 
-%===== MAIN PARAMETERS =====================================================
+  % Defien progress var
+  Pbar = waitbar(0.0,'Setting Parameters','Name','Initialization');
+  for i=1:72; fprintf('_'); end
+  fprintf('\n\n');
 
-% Information Progreess
 
-waitbar(0.1,Pbar,'Reading Parameters','Name','Initialization');
-fprintf('_______________________________________________\n\n');
-fprintf('   Reading Parameters ----------- [  ]');
+  %===== MAIN PARAMETERS =====================================================
 
-%--- Parameters ---
-Opt.K   = handles.SPM.TEDM.Param.K;
-Opt.Del = handles.SPM.TEDM.Param.Del; 
-Opt.L_A = handles.SPM.TEDM.Param.Sp_A;
-Opt.L_F = handles.SPM.TEDM.Param.Sp_F;
-Opt.cdl = handles.SPM.TEDM.Param.cdl; 
+  %Information Progreess
 
-VY    = handles.SPM.xY.VY;
-xM    = handles.SPM.xM;
-DIM   = VY(1).dim;
-nScan = handles.SPM.nscan;
+  waitbar(0.1,Pbar,'Reading parameters','Name','Initialization');
+  fprintf('   Reading parameters --------------------------- [  ]');
 
-mask = true(DIM);
+  %--- Parameters ---
+  Opt.K   = handles.SPM.TEDM.Param(ss).K;
+  Opt.Del = handles.SPM.TEDM.Param(ss).Del; 
+  Opt.L_A = handles.SPM.TEDM.Param(ss).Sp_A;
+  Opt.L_F = handles.SPM.TEDM.Param(ss).Sp_F;
+  Opt.cdl = handles.SPM.TEDM.Param(ss).cdl; 
 
-fprintf('\b\b\bOk]\n');
+  VY    = handles.SPM.xY.VY;
+  xM    = handles.SPM.xM;
+  nScan = handles.SPM.nscan(1);
+  iScan = 1; 
 
-%===== MASCARADA ===========================================================
-waitbar(0.2,Pbar,'Get Data and Applaying Mask');
-fprintf('   Get Data and Applying Mask --- [  ]');
+  % Check sessions
+  if(ss>1)
+  	% Update total number of scans
+  	nScan = handles.SPM.nscan(ss);
 
-%--- Split data into chuncks ---
-chunksize = floor(spm_get_defaults('stats.maxmem') / 8 / nScan);
-N_chunks  = ceil(prod(DIM) / chunksize);
-chunks    = min(cumsum([1 repmat(chunksize,1,N_chunks)]),prod(DIM)+1);
+  	% Update first scan position
+    iScan = 1 + sum(handles.SPM.nscan(1:(ss-1)));
 
-lns = linspace(0.2,0.8,N_chunks);
+  end
 
-% Chuck's Loop
-for i = 1:N_chunks
+  DIM   = VY(iScan).dim;
+  mask = true(DIM);
 
-  chunk = chunks(i):chunks(i+1)-1;
+  fprintf('\b\b\bOk]\n');
 
-  % Get data and costruct analysis mask
-  Y     = zeros(nScan,numel(chunk));
-  cmask = mask(chunk);
+  %===== MASCARADA ===========================================================
+  waitbar(0.2,Pbar,'Get data and apply mask');
+  fprintf('   Get data and apply mask ---------------------- [  ]');
 
-  for j = 1:nScan
-    if ~any(cmask), break, end       % - Break if empty mask
+  %--- Split data into chuncks ---
+  chunksize = floor(spm_get_defaults('stats.maxmem') / 8 / nScan);
+  N_chunks  = ceil(prod(DIM) / chunksize);
+  chunks    = min(cumsum([1 repmat(chunksize,1,N_chunks)]),prod(DIM)+1);
 
-    % Read chunk of data
-    Y(j,cmask) = spm_data_read(VY(j),chunk(cmask)); 
+  lns = linspace(0.2,0.8,N_chunks);
 
-    cmask(cmask) = Y(j,cmask) > xM.TH(j);
+  % Chuck's Loop
+  for i = 1:N_chunks
 
-    if xM.I && ~YNaNrep && xM.TH(j) < 0  % Use implicit mask
-      cmask(cmask) = abs(Y(:,cmask)) > eps;
+    chunk = chunks(i):chunks(i+1)-1;
+
+    % Get data and costruct analysis mask
+    Y     = zeros(nScan,numel(chunk));
+    cmask = mask(chunk);
+
+    for j = 1:nScan
+        
+      idS = iScan + j-1;
+      
+      if ~any(cmask), break, end       % - Break if empty mask
+
+      % Read chunk of data
+      Y(j,cmask) = spm_data_read(VY(idS),chunk(cmask)); 
+
+      cmask(cmask) = Y(j,cmask) > xM.TH(idS);
+
+      if xM.I && ~YNaNrep && xM.TH(idS) < 0  % Use implicit mask
+        cmask(cmask) = abs(Y(:,cmask)) > eps;
+      end
     end
-  end
 
-  cmask(cmask) = any(diff(Y(:,cmask),1)); % Mask constant data
-  mask(chunk)  = cmask;
+    cmask(cmask) = any(diff(Y(:,cmask),1)); % Mask constant data
+    mask(chunk)  = cmask;
 
-  if ~any(cmask), continue, end
+    if ~any(cmask), continue, end
   
-  % Store chunks of data
-  if i==1
-    Dat = Y(:,cmask);
-  else
-    Dat = [Dat Y(:,cmask)];
+    % Store chunks of data
+    if i==1
+      Dat = Y(:,cmask);
+    else
+      Dat = [Dat Y(:,cmask)];
+    end
+
+    waitbar(lns(i),Pbar);
   end
 
-  waitbar(lns(i),Pbar);
-end
+  % Store data
+  Opt.Dat = Dat;
 
-% Store data
-Opt.Dat = Dat;
+  clear('Dat','Y','cmask');
 
-clear('Dat','Y','cmask');
+  fprintf('\b\b\bOk]\n'); 
 
-fprintf('\b\b\bOk]\n'); 
+  %=== DETRENDING =======================================================
+  fprintf('   Detrending ----------------------------------- [  ]');
+  waitbar(0.81,Pbar,'Detrending');
 
-%=== DETRENDING =======================================================
-fprintf('   - Detrending ----------------- [  ]');
-waitbar(0.81,Pbar,'Detrending');
+  AuxDat = double(Opt.Dat);
 
-AuxDat = double(Opt.Dat);
+  % Subtract the mean
+  AuxDat = tedm_SinMed(AuxDat);
 
-% Subtract the mean
-AuxDat = tedm_SinMed(AuxDat);
+  % Subtract trends
+  AuxDat = detrend(AuxDat);
 
-% Subtract trends
-AuxDat = detrend(AuxDat);
+  % Update data
+  Opt.Dat = AuxDat;
 
-% Update data
-Opt.Dat = AuxDat;
+  clear('AuxDat');
 
-clear('AuxDat');
+  fprintf('\b\b\bOk]\n');
+  waitbar(0.9,Pbar);
 
-fprintf('\b\b\bOk]\n');
-waitbar(0.9,Pbar);
-
-%=== CHEKING PARAMETERS ==========================================
-fprintf('   - Checking parameters -------- [  ]');
-waitbar(0.95,Pbar,'Checking Parameters');
+  %=== CHEKING PARAMETERS ==========================================
+  fprintf('   Checking parameters -------------------------- [  ]');
+  waitbar(0.95,Pbar,'Checking Parameters');
 
 
-%--- Defaluts --------------------------------------------
-param.iter  = 50;           % Number of iterations
-param.Ini   = 'Jdr';          % Initialization mode
-param.mgreg = 'n';            % No post-processing
-param.Preg  = 'n';            % No data reduction
-param.Verb  = 'y';         % Display verbose
-%---------------------------------------------------------
+  %--- Defaluts --------------------------------------------
+  param.iter  = 50;           % Number of iterations
+  param.Ini   = 'Jdr';          % Initialization mode
+  param.mgreg = 'n';            % No post-processing
+  param.Preg  = 'n';            % No data reduction
+  param.Verb  = 'y';         % Display verbose
+  %---------------------------------------------------------
 
-param.data  = Opt.Dat;           % Data
-param.K     = Opt.K;             % Total number of components
-param.Lam   = [Opt.L_A Opt.L_F]; % Sparsity parameters
-param.Del   = Opt.Del;           % Task-related time courses
-param.cdl   = Opt.cdl;           % Similarity parameter
+  param.data  = Opt.Dat;           % Data
+  param.K     = Opt.K;             % Total number of components
+  param.Lam   = [Opt.L_A Opt.L_F]; % Sparsity parameters
+  param.Del   = Opt.Del;           % Task-related time courses
+  param.cdl   = Opt.cdl;           % Similarity parameter
 
-clear('Opt');
+  clear('Opt');
 
-fprintf('\b\b\bOk]\n');
-fprintf('_______________________________________________\n\n\n');
-close(Pbar);
+  fprintf('\b\b\bOk]\n');
+  for i=1:72; fprintf('_'); end
+  fprintf('\n\n');
+  close(Pbar);
 
-%=== CALL IADL ============================================================
+  %=== CALL IADL ============================================================
 
-    [D,s] = tedm_IADL(param);
+  [D,s] = tedm_IADL(param);
 
-clear('param');
+  clear('param');
 
-%=== SAVE REGRESSORS =======================================================
-fprintf('   - Saving Results -------- [  ]');
-Pbar = waitbar(0,'Save Mask...','Name','Save Results');
+  %=== SAVE REGRESSORS =======================================================
+  for i=1:72; fprintf('_'); end
+  fprintf('\n\n');
+  fprintf('   Saving results ------------------------------- [  ]');
+  Pbar = waitbar(0,'Save Mask...','Name','Save Results');
 
-%-Initialise mask file
-%--------------------------------------------------------------------------
-% Parameters dimensions and orientation
-file_ext = '.nii';
-DIM  = handles.SPM.xY.VY(1).dim;
-M    = handles.SPM.xY.VY(1).mat;
-metadata = {};
+  %-Initialise mask file
+  %--------------------------------------------------------------------------
+  % Parameters dimensions and orientation
+  file_ext = '.nii';
+  DIM  = handles.SPM.xY.VY(iScan).dim;
+  M    = handles.SPM.xY.VY(iScan).mat;
+  metadata = {};
 
-VM = struct(...
-    'fname',   ['tedm_mask' file_ext],...
+  VM = struct(...
+    'fname',   ['tedm_mask-Ss_' num2str(ss,'%02i') file_ext],...
     'dim',     DIM,...
     'dt',      [spm_type('uint8') spm_platform('bigend')],...
     'mat',     M,...
     'pinfo',   [1 0 0]',...
     'descrip', 'spm_spm:resultant analysis mask',...
     metadata{:});
-VM = spm_data_hdr_write(VM);
+  VM = spm_data_hdr_write(VM);
 
-% Save mask file
-VM = spm_data_write(VM,mask);
+  % Save mask file
+  VM = spm_data_write(VM,mask);
 
-Pbar = waitbar(1,Pbar);
+	Pbar = waitbar(1,Pbar);
 
-%-Remove constant atom
-%---------------------------------------------------------------------------
-Pbar = waitbar(0,Pbar,'Remove constant atom...');
-K = handles.SPM.TEDM.Param.K;
-iB = handles.SPM.TEDM.Param.iB;
+  %-Remove constant atom
+  %---------------------------------------------------------------------------
+  Pbar = waitbar(0,Pbar,'Remove constant atom...');
+  K  = handles.SPM.TEDM.Param(ss).K;
+  iB = handles.SPM.TEDM.Param(ss).iB;
 
-D(:,iB) = [];
-s(iB,:) = [];
+  D(:,iB) = [];
+  s(iB,:) = [];
 
-% Update names
-handles.SPM.TEDM.Param.names(iB) = [];
+  % Update names
+  handles.SPM.TEDM.Param(ss).names(iB) = [];
 
-K = K-1;
+  K = K-1;
 
-Pbar = waitbar(1,Pbar);
+  Pbar = waitbar(1,Pbar);
 
-%-Save spatial maps
-%---------------------------------------------------------------------------
-Pbar = waitbar(0,Pbar,'Saving spatial maps...');
+  %-Save spatial maps
+  %---------------------------------------------------------------------------
+  Pbar = waitbar(0,Pbar,'Saving spatial maps...');
 
-%--- Initalise map file ---
-% Parameters, dimensions and orientation
-file_ext = '.nii';
-DIM  = handles.SPM.xY.VY(1).dim;
-M    = handles.SPM.xY.VY(1).mat;
+  %--- Initalise map file ---
+  % Parameters, dimensions and orientation
+  file_ext = '.nii';
+  DIM  = handles.SPM.xY.VY(iScan).dim;
+  M    = handles.SPM.xY.VY(iScan).mat;
 
-% Initialize spatial maps
-Vmap(1:K) = deal(struct(...
-  'fname',   [],...
-  'dim',     DIM,...
-  'dt',      [spm_type('float32') spm_platform('bigend')],...
-  'mat',     M,...
-  'pinfo',   [1 0 0]',...
-  'descrip', 'spm_spm:beta',...
-  metadata{:}));
+  % Initialize spatial maps
+  Vmap(1:K) = deal(struct(...
+    'fname',   [],...
+    'dim',     DIM,...
+    'dt',      [spm_type('float32') spm_platform('bigend')],...
+    'mat',     M,...
+    'pinfo',   [1 0 0]',...
+    'descrip', 'spm_spm:beta',...
+    metadata{:}));
 
-for i = 1:K
-  cmpnames        = handles.SPM.TEDM.Param.names;
-  name            = [sprintf(['tedm_' cmpnames{i}],i) file_ext];
-  Vmap(i).fname   = name;
-  Vmap(i).descrip = sprintf('spm_spm:beta (%04d) - %s',i,name);
+  for i = 1:K
+    cmpnames        = handles.SPM.TEDM.Param(ss).names;
+    name            = [sprintf(['tedm-Ss' num2str(ss,'%02i') '_' cmpnames{i}],i) file_ext];
+    Vmap(i).fname   = name;
+    Vmap(i).descrip = sprintf('spm_spm:beta (%04d) - %s',i,name);
 
-  % Save names
-  handles.SPM.TEDM.Res.xS{i} = name;
+    % Save names
+    handles.SPM.TEDM.Res(ss).xS{i} = name;
 
-end
+  end
 
-% Write info
-Vmap = spm_data_hdr_write(Vmap);
+  % Write info
+  Vmap = spm_data_hdr_write(Vmap);
 
 
-% Components
-Pbar = waitbar(0.1,Pbar);
-lns = linspace(0.1,1,K);
+  % Components
+  Pbar = waitbar(0.1,Pbar);
+  lns = linspace(0.1,1,K);
 
-for i = 1:K
-  Cmp = NaN(size(mask));
+  for i = 1:K
+    Cmp = NaN(size(mask));
 
-  % Save Components
-  Cmp(mask) = s(i,:)';
-  Vmap(i) = spm_data_write(Vmap(i),Cmp);
+    % Save Components
+    Cmp(mask) = s(i,:)';
+    Vmap(i) = spm_data_write(Vmap(i),Cmp);
 
-  Pbar = waitbar(lns(i),Pbar);
-end
+    Pbar = waitbar(lns(i),Pbar);
+  end
    
 
-% Clear stuff
-clear('Cmp','msk');
+  % Clear stuff
+  clear('Cmp','msk','Vmap');
+  close(Pbar);
 
-fprintf('\b\b\bOk]\n');
-close(Pbar);
+  %===== Store spatial components in a signle 4D-nii file =====
+
+  % Take names
+  for i=1:K
+    fname{i} = handles.SPM.TEDM.Res(ss).xS{i};
+  end
+
+  %--- Create 4D file ---
+  NiiName = ['tedm-AllComps-Ss_' num2str(ss,'%02i') '.nii'];
+  spm_file_merge(fname,NiiName,64);
+
+  % Remove old 3d files
+  for i=1:K
+    spm_unlink(fname{i});
+  end
+
+  % Clear stuff
+  clear('Cmp','msk','Vmap');
+
+  fprintf('\b\b\bOk]\n');
+
+  %===== Update Design matrix =====
+  fprintf('   Store Enhanced Design Matrix ----------------- [  ]');
+
+  %--- Save Temporal Components
+  handles.SPM.TEDM.Res(ss).xD = D;
+
+  %--- Selct all the regressors
+  for(k = 1:K)
+    handles.SPM.TEDM.Param(ss).SetReg{k} = true;
+  end
 
 
-%=== Update Design matrix ======================================================
-fprintf('   - Update Design Matrix -- [  ]');
+  fprintf('\b\b\bOk]\n');
+end
 
-%--- Save Temporal Components
-handles.SPM.TEDM.Res.xD = D;
+%--- Create a new SPM file with the Enhacned design matrix ---
 
-%--- Create new SPM file with the Enhanced Design matrix
 tedm_Update_fMRI_design(handles.SPM);
 
-upDM = questdlg('Do you want to use the full enhacned design matrix?',...
-	                'Selection of the regressors',...
-	                'Yes','No','Yes');
+msgbox('The matrix was succesfully enhacned','Operation Completed','help');
 
-fprintf('\b\b\bOk]\n');
+%--- Create new SPM file with the Enhanced Design matrix
+%tedm_Update_fMRI_design(handles.SPM);
+%
+%upDM = questdlg('Do you want to use the full enhacned design matrix?',...
+%                  'Selection of the regressors',...
+%                  'Yes','No','Yes');
+%
+%fprintf('\b\b\bOk]\n');
+%
+%switch upDM
+%  case 'No'
+%    fprintf('   - Call Menu for manual selection -\n');
+%
+%    tedm_SelectRegressor(SPM);
+%
+%  otherwise
+%    fprintf('   - Full design matrix succesfully updated \\(^ ^)/\n');
+%end
+%
+%fprintf('\n\n______________________________________________________________');
 
-switch upDM
-  case 'No'
-    fprintf('   - Call Menu for manual selection -\n');
-
-    tedm_SelectRegressor(SPM);
-
-  otherwise
-    fprintf('   - Full design matrix succesfully updated \\(^ ^)/\n');
-end
-
-fprintf('\n\n______________________________________________________________');
 
 
-
-function InfoPrefix_Callback(hObject, eventdata, handles)
-% hObject    handle to InfoPrefix (see GCBO)
+function textcdl_Callback(hObject, eventdata, handles)
+% hObject    handle to textcdl (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of InfoPrefix as text
-%        str2double(get(hObject,'String')) returns contents of InfoPrefix as a double
+% Hints: get(hObject,'String') returns contents of textcdl as text
+%        str2double(get(hObject,'String')) returns contents of textcdl as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function InfoPrefix_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to InfoPrefix (see GCBO)
+function textcdl_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to textcdl (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -427,104 +458,26 @@ end
 
 
 
-function InfoAssisted_Callback(hObject, eventdata, handles)
-% hObject    handle to InfoAssisted (see GCBO)
+function outPrefix_Callback(hObject, eventdata, handles)
+% hObject    handle to outPrefix (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of InfoAssisted as text
-%        str2double(get(hObject,'String')) returns contents of InfoAssisted as a double
+% Hints: get(hObject,'String') returns contents of outPrefix as text
+%        str2double(get(hObject,'String')) returns contents of outPrefix as a double
 
+% Update outPrefix
+prefix = get(hObject,'String');
 
-% --- Executes during object creation, after setting all properties.
-function InfoAssisted_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to InfoAssisted (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function InfoComponent_Callback(hObject, eventdata, handles)
-% hObject    handle to InfoComponent (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of InfoComponent as text
-%        str2double(get(hObject,'String')) returns contents of InfoComponent as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function InfoComponent_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to InfoComponent (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function InfoSimilarity_Callback(hObject, eventdata, handles)
-% hObject    handle to InfoSimilarity (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of InfoSimilarity as text
-%        str2double(get(hObject,'String')) returns contents of InfoSimilarity as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function InfoSimilarity_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to InfoSimilarity (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes during object creation, after setting all properties.
-function axesTask_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to axesTask (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: place code in OpeningFcn to populate axes2axes(handles.axes);
-
-
-
-function InfoOutput_Callback(hObject, eventdata, handles)
-% hObject    handle to InfoOutput (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of InfoOutput as text
-%        str2double(get(hObject,'String')) returns contents of InfoOutput as a double
-
-% Update output
-out = get(hObject,'String');
-
-handles.SPM.TEDM.hist.outfile = out;
+handles.SPM.TEDM.hist.outfile = prefix;
 
 % Update handles structure
 guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
-function InfoOutput_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to InfoOutput (see GCBO)
+function outPrefix_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to outPrefix (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -533,3 +486,169 @@ function InfoOutput_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+function InputText_Callback(hObject, eventdata, handles)
+% hObject    handle to InputText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of InputText as text
+%        str2double(get(hObject,'String')) returns contents of InputText as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function InputText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to InputText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function SessionText_Callback(hObject, eventdata, handles)
+% hObject    handle to SessionText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of SessionText as text
+%        str2double(get(hObject,'String')) returns contents of SessionText as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function SessionText_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SessionText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in ButSessNext.
+function ButSessNext_Callback(hObject, eventdata, handles)
+% hObject    handle to ButSessNext (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Parameters
+Sess = length(handles.SPM.nscan);
+ss   = handles.SS;
+
+% Move Session
+ss = ss + 1;
+
+if(ss>Sess)
+  ss = 1;
+end
+
+handles.SS = ss;
+
+% Update session menu
+UpdateSessionMenu(hObject, eventdata, handles);
+
+% Update handles structure
+guidata(hObject, handles);
+
+
+% --- Executes on button press in ButSessPrev.
+function ButSessPrev_Callback(hObject, eventdata, handles)
+% hObject    handle to ButSessPrev (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Parameters
+Sess = length(handles.SPM.nscan);
+ss   = handles.SS;
+
+% Move Session
+ss = ss - 1;
+
+if(ss<1)
+  ss = Sess;
+end
+
+handles.SS = ss;
+
+% Update session menu
+UpdateSessionMenu(hObject, eventdata, handles);
+
+% Update handles structure
+guidata(hObject, handles);
+
+
+%===== Extra Functions ======================================
+
+% Update Session Function
+function UpdateSessionMenu(hObject, eventdata, handles)
+% This function update the Session Menu with all the 
+% required parameters
+
+% Parameters
+ss = handles.SS;
+Sp_A   = handles.SPM.TEDM.Param(ss).Sp_A;
+Sp_F   = handles.SPM.TEDM.Param(ss).Sp_F;
+K      = handles.SPM.TEDM.Param(ss).K;
+NSrc_A = handles.SPM.TEDM.Param(ss).NSrc_A;
+
+Sp_Vct = [Sp_A Sp_F];
+
+%--- Session Panel ----
+set(handles.PanelSS,'Title',['Session ' num2str(ss,'%02i')]);
+
+%--- Similarity parameter ---
+cdl = handles.SPM.TEDM.Param(ss).cdl;
+set(handles.textcdl,'String',num2str(cdl));
+
+%----- Task related time courses -----
+% Reference Dictionary
+Del = handles.SPM.TEDM.Param(ss).Del;
+
+% Plot
+axes(handles.axesTask);
+axT = imagesc(Del);
+
+% Features
+axT = colormap(flipud(bone));
+set(handles.axesTask,'XTick',[1:1:NSrc_A]);
+set(handles.axesTask,'YTick',[]);
+set(handles.axesTask,'XAxisLocation','top');
+set(handles.axesTask,'YGrid','off');
+
+%--- Sparsity Parameters ---
+for kk = 1:K
+  Tnames{kk} = handles.SPM.TEDM.Param(ss).names{kk};
+  Tspars{kk} = Sp_Vct(kk);
+  
+  if(kk<=NSrc_A) 
+    Tpoint{kk} = 'A';
+  else
+    Tpoint{kk} = 'F';
+  end
+end
+
+% Update Table
+
+columnname     = {'Component', 'A/F', 'Sp'};
+columnformat   = {'char', 'char', 'numeric'};
+columneditable = [false false false];
+columnwidth    = {150,30,40};
+
+%--- Update table ---
+set(handles.TableParam,'ColumnEditable',columneditable);
+set(handles.TableParam,'ColumnName',columnname);
+set(handles.TableParam,'ColumnFormat',columnformat);
+set(handles.TableParam,'ColumnWidth',columnwidth);
+set(handles.TableParam,'Data',[Tnames' Tpoint' Tspars']);
+
+% Update handles structure
+guidata(hObject, handles);
