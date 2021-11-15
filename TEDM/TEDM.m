@@ -52,6 +52,9 @@ function TEDM_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to TEDM (see VARARGIN)
 
+% Wellcome call
+tedm_Info;
+
 % Choose default command line output for TEDM
 handles.output = hObject;
 
@@ -82,7 +85,7 @@ tt = '--- Information ---';
 msg = {'‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾';...
        '   TEDM - Toolbox for Enhanced Design Matrix';...
        '___________________________________________________';...
-       '  vs.2.0 - 2020  -  M. Morante   ';
+       ['   ',tedm_Info('Ver'),' - ', tedm_Info('email')];
        '‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾'};
 msgbox(msg,tt);
 
