@@ -296,13 +296,13 @@ else %======== Multi-session experiment =========
 
     % Check for constrant component
     if(~isempty(SPM.xX.iB(ss)))
-      SPM.TEDM.Param.iB(ss) = SPM.xX.iB(ss);
+      SPM.TEDM.Param(ss).iB = SPM.xX.iB(ss);
       K_A  = K_A + 1;
       Sp_A = [Sp_A 0];
 
     else
   
-      SPM.TEDM.Param.iB(ss) = 0;
+      SPM.TEDM.Param(ss).iB = 0;
 
     end
 

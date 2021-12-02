@@ -245,11 +245,12 @@ for ss = 1:Sess
 
 
   %--- Defaluts --------------------------------------------
-  param.iter  = 50;           % Number of iterations
+  %param.iter  = 3000;           % Number of iterations
+  param.iter  = 10; %<====================================================================== Just for testing =b
   param.Ini   = 'Jdr';          % Initialization mode
   param.mgreg = 'n';            % No post-processing
   param.Preg  = 'n';            % No data reduction
-  param.Verb  = 'y';         % Display verbose
+  param.Verb  = 'y';            % Display verbose
   %---------------------------------------------------------
 
   param.data  = Opt.Dat;           % Data

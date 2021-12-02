@@ -16,7 +16,7 @@ function Info = tedm_info(varargin)
 
     switch Action
     case 'Ver'
-        Info = 'vs 2.0.1';
+        Info = 'vs 2.1.0';
 
     case 'Author'
         Info = 'M. Morante';

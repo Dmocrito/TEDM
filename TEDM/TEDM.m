@@ -22,7 +22,7 @@ function varargout = TEDM(varargin)
 
 % Edit the above text to modify the response to help TEDM
 
-% Last Modified by GUIDE v2.5 31-Jul-2019 20:23:28
+% Last Modified by GUIDE v2.5 16-Nov-2021 18:02:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -126,4 +126,4 @@ function Selection_Callback(hObject, eventdata, handles)
 % hObject    handle to Selection (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-tedm_FileExplorer('SelectRegressor')
+tedm_FileExplorer('SelectRegressor');
